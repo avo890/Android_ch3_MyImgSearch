@@ -18,58 +18,65 @@ import retrofit2.Response
 
 
 class SearchFragment : Fragment() {
-
+    private lateinit var adapter: SharedAdapter
+    private lateinit var searchWord : String
     private var _binding: FragmentSearchBinding? = null
     private val binding get() = _binding!!
-
-    private lateinit var adapter: SearchAdapter
-    private val dataList = mutableListOf<KakaoImageData>()
+    private val sharedViewModel : SharedViewModel by activityViewModels()
+    private var dataList = mutableListOf<KakaoImageData>()
 
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         _binding = FragmentSearchBinding.inflate(inflater, container, false)
-
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        adapter = SearchAdapter(dataList)
+        adapter = SharedAdapter(dataList)
         binding.rvImgData.adapter = adapter
         binding.rvImgData.layoutManager = GridLayoutManager(context, 2)
 
         loadSearchWord()
 
+        sharedViewModel.likedDataList.observe(viewLifecycleOwner, Observer {
+            adapter.setData(dataList)
+        })
+
         binding.btnSearch.setOnClickListener {
-            val searchWord = binding.etSearch.text.toString()
+            searchWord = binding.etSearch.text.toString()
             getSearchImg(searchWord)
+            Log.d("검색어검사","$searchWord")
             hideKeyboard()
             saveSearchWord(searchWord)
         }
 
 
-        adapter.itemClick = object : SearchAdapter.ItemClick {
+        adapter.itemClick = object : SharedAdapter.ItemClick {
             override fun onClick(view: View, position: Int) {
-                if (!dataList[position].isliked) {
-                    dataList[position].isliked = true
-                    adapter.notifyItemChanged(position)
-                } else {
-                    dataList[position].isliked = false
-                    adapter.notifyItemChanged(position)
-                }
-                Log.d("true검사", "$dataList")
+                val data = dataList.getOrNull(position) ?: return
+                data.isliked = !data.isliked
+                sharedViewModel.filterDataList(dataList)
+                adapter.notifyItemChanged(position)
+
+
             }
         }
+
+
     }
+
 
     private fun getSearchImg(searchWord: String) {
         RetrofitInstance.api.getImgData(query = searchWord).enqueue(object : Callback<ImageResponse> {
             override fun onResponse(call: Call<ImageResponse>, response: Response<ImageResponse>) {
+                Log.d("레트로핏검색어검사", searchWord)
                 val body = response.body()
                 body?.let {
+                    dataList.clear()
                     dataList.addAll(it.documents)
+                    adapter.notifyDataSetChanged()
                 }
-                adapter.notifyDataSetChanged()
                 Log.d("api검사", "$dataList")
             }
 
@@ -79,6 +86,7 @@ class SearchFragment : Fragment() {
 
         })
     }
+
 
     private fun saveSearchWord(searchWord: String) {
         val pref = requireContext().getSharedPreferences("pref", 0)
