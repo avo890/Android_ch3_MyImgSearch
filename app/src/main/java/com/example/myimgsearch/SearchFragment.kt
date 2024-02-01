@@ -9,21 +9,27 @@ import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.myimgsearch.databinding.FragmentSearchBinding
+import com.google.gson.Gson
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
 
 class SearchFragment : Fragment() {
-    private lateinit var adapter: SharedAdapter
-    private lateinit var searchWord : String
+    private lateinit var adapter: SharedListAdapter
+    private lateinit var searchWord: String
+    private var dataList = mutableListOf<KakaoImageData>()
     private var _binding: FragmentSearchBinding? = null
     private val binding get() = _binding!!
-    private val sharedViewModel : SharedViewModel by activityViewModels()
-    private var dataList = mutableListOf<KakaoImageData>()
+    private val sharedViewModel: SharedViewModel by activityViewModels()
 
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -33,58 +39,102 @@ class SearchFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        adapter = SharedAdapter(dataList)
+        adapter = SharedListAdapter()
         binding.rvImgData.adapter = adapter
         binding.rvImgData.layoutManager = GridLayoutManager(context, 2)
 
+
         loadSearchWord()
 
-        sharedViewModel.likedDataList.observe(viewLifecycleOwner, Observer {
-            adapter.setData(dataList)
+        sharedViewModel.searchDataList.observe(viewLifecycleOwner, Observer {
+            adapter.submitList(it)
         })
 
-        binding.btnSearch.setOnClickListener {
-            searchWord = binding.etSearch.text.toString()
-            getSearchImg(searchWord)
-            Log.d("검색어검사","$searchWord")
-            hideKeyboard()
-            saveSearchWord(searchWord)
-        }
 
-
-        adapter.itemClick = object : SharedAdapter.ItemClick {
-            override fun onClick(view: View, position: Int) {
-                val data = dataList.getOrNull(position) ?: return
-                data.isliked = !data.isliked
-                sharedViewModel.filterDataList(dataList)
-                adapter.notifyItemChanged(position)
-
-
-            }
-        }
-
+        searchClick()
+        clickLiked()
 
     }
 
 
     private fun getSearchImg(searchWord: String) {
-        RetrofitInstance.api.getImgData(query = searchWord).enqueue(object : Callback<ImageResponse> {
-            override fun onResponse(call: Call<ImageResponse>, response: Response<ImageResponse>) {
-                Log.d("레트로핏검색어검사", searchWord)
-                val body = response.body()
-                body?.let {
-                    dataList.clear()
-                    dataList.addAll(it.documents)
-                    adapter.notifyDataSetChanged()
+        lifecycleScope.launch {
+            val responseList = withContext(Dispatchers.IO) {
+                RetrofitInstance.api.getImgData(query = searchWord).documents
+            }
+            dataList.clear()
+            dataList.addAll(responseList)
+            adapter.submitList(dataList)
+        }
+
+    }
+
+    private fun searchClick() {
+        binding.btnSearch.setOnClickListener {
+            searchWord = binding.etSearch.text.toString()
+            getSearchImg(searchWord)
+            sharedViewModel.addDataList(dataList)
+            Log.d("검색어검사", "$searchWord")
+            hideKeyboard()
+            saveSearchWord(searchWord)
+        }
+
+    }
+
+
+//    private fun clickLiked() {
+//        adapter.itemClick = object : SharedListAdapter.ItemClick {
+//            override fun onClick(view: View, position: Int) {
+//                if (!dataList[position].isliked) {
+//                    Log.d("서치프래그먼트클릭검사","${dataList[position]}")
+//                    sharedViewModel.addFavorite(dataList[position])
+//                    dataList[position].isliked = true
+//                    saveFavorite()
+//                } else {
+//                    dataList[position].isliked = false
+//                    sharedViewModel.removeFavorite(dataList[position])
+//                }
+//                adapter.notifyItemChanged(position)
+//            }
+//        }
+//    }
+
+    private fun clickLiked() {
+        adapter.itemClick = object : SharedListAdapter.ItemClick {
+            override fun onClick(view: View, position: Int) {
+                if (!dataList[position].isliked) {
+                    Log.d("서치프래그먼트클릭검사","${dataList[position]}")
+                    dataList[position].isliked = true
+                    sharedViewModel.addFavorite(dataList[position])
+                    saveFavorite(position)
+                } else {
+                    dataList[position].isliked = false
+                    sharedViewModel.removeFavorite(dataList[position])
+                    removeFavorite(dataList[position].thumbnailUrl)
                 }
-                Log.d("api검사", "$dataList")
+                adapter.notifyItemChanged(position)
             }
+        }
+    }
 
-            override fun onFailure(call: Call<ImageResponse>, t: Throwable) {
-                Log.d("api검사", "네트워크오류/데이터변환오류.")
+    private fun saveFavorite(position: Int) {
+        val pref = requireContext().getSharedPreferences("favorite_prefs", 0)
+        val editor = pref?.edit()
+        val likedDataJson = Gson().toJson(dataList[position])
+        editor?.putString("FavoriteData$position", likedDataJson)
+        editor?.apply()
+    }
+
+    private fun removeFavorite(thumbnailUrl: String) {
+        val pref = requireContext().getSharedPreferences("favorite_prefs", 0)
+        val editor = pref.edit()
+        val allData: Map<String, *> = pref.all
+        for ((key, value) in allData) {
+            if (value is String && value.contains(thumbnailUrl)) {
+                editor.remove(key)
             }
-
-        })
+        }
+        editor.apply()
     }
 
 

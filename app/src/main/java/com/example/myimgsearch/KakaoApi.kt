@@ -7,9 +7,9 @@ import retrofit2.http.Query
 
 interface KakaoApi {
     @GET("v2/search/image")
-    fun getImgData(
+    suspend fun getImgData(
         @Header("Authorization") apiKey: String = "KakaoAK ${BuildConfig.KAKAOAPI}",
         @Query("query") query: String
-    ) : Call<ImageResponse>
+    ) : ImageResponse
 
 }

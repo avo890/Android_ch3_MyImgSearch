@@ -6,18 +6,41 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
 class SharedViewModel : ViewModel() {
-   // val likedDataList = MutableLiveData<List<KakaoImageData>>()
 
-    private val _likedDataList = MutableLiveData<List<KakaoImageData>>()
-    val likedDataList: LiveData<List<KakaoImageData>> get() = _likedDataList
 
-    fun filterDataList(dataList: MutableList<KakaoImageData>) {
-        val likedList = dataList.filter { it.isliked }
-        _likedDataList.value = likedList.toMutableList()
-        Log.d("뷰모델검사","${likedDataList.value}")
-        Log.d("뷰모델사이즈검사","${likedDataList.value?.count()}")
+    private val _likedDataList = MutableLiveData<Set<KakaoImageData>>(mutableSetOf())
+    val likedDataList: LiveData<Set<KakaoImageData>> get() = _likedDataList
+
+    private val _searchDataList: MutableLiveData<MutableList<KakaoImageData>> = MutableLiveData()
+    val searchDataList: LiveData<MutableList<KakaoImageData>> get() = _searchDataList
+
+
+    fun addDataList(dataList: MutableList<KakaoImageData>) {
+        _searchDataList.value = dataList.toMutableList()
     }
 
-    fun getFilterDataList(): MutableList<KakaoImageData> = likedDataList.value?.toMutableList() ?: mutableListOf()
+    fun addFavorite(kakaoImageData: KakaoImageData) {
+        _likedDataList.value = _likedDataList.value?.toMutableSet()?.apply {
+            add(kakaoImageData)
+        } ?: mutableSetOf()
+
+        Log.d("뷰모델검사", "${_likedDataList.value}")
+        Log.d("뷰모델사이즈검사", "${_likedDataList.value?.count()}")
+    }
+
+
+    fun removeFavorite(kakaoImageData: KakaoImageData?) {
+        _likedDataList.value = _likedDataList.value?.toMutableSet()?.apply {
+            remove(kakaoImageData)
+        } ?: mutableSetOf()
+        Log.d("리무브검사","리무브검사")
+
+    }
+
+
+    fun clearLikedDataList() {
+        _likedDataList.value = emptySet()
+    }
+
 
 }

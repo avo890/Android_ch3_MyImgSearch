@@ -19,9 +19,5 @@ class ViewPager2Adapter(fragmentActivity: MainActivity) : FragmentStateAdapter(f
         notifyItemInserted(fragments.size - 1)
     }
 
-    fun removeFragement() {
-        fragments.removeLast()
-        notifyItemRemoved(fragments.size)
-    }
 
 }
