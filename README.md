@@ -1,4 +1,5 @@
 # Android_ch3_MyImgSearch
+: Kakao API를 활용한 이미지 검색 어플 만들기. 검색기능과 선택한 이미지 보관(SharedPreference로 저장) 기능을 구현한 코드를 업로드 하였다.
 
 [[TIL] Android 앱 개발 심화 : 이미지 검색 어플 구현하기 1](https://velog.io/@wiz_hey/TIL-Android-%EC%95%B1-%EA%B0%9C%EB%B0%9C-%EC%8B%AC%ED%99%94-%EC%9D%B4%EB%AF%B8%EC%A7%80-%EA%B2%80%EC%83%89-%EC%96%B4%ED%94%8C-%EA%B5%AC%ED%98%84%ED%95%98%EA%B8%B0-1) <br>
 : API 연결 <br>
