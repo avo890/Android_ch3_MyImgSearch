@@ -1,4 +1,4 @@
-package com.example.myimgsearch
+package com.example.myimgsearch.ui
 
 import android.os.Bundle
 import android.util.Log
@@ -9,6 +9,8 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.GridLayoutManager
+import com.example.myimgsearch.data.KakaoImageData
+import com.example.myimgsearch.data.SharedViewModel
 import com.example.myimgsearch.databinding.FragmentStorageBinding
 import com.google.gson.Gson
 
@@ -51,9 +53,10 @@ class StorageFragment : Fragment() {
             override fun onClick(view: View, position: Int) {
 
                 if (position < adapter.currentList.size) {
-                    adapter.currentList[position].isliked = false
+//                    adapter.currentList[position].isliked = false
+                    sharedViewModel.addDeletedItemUrls(adapter.currentList[position].thumbnailUrl)
                     sharedViewModel.removeFavorite(adapter.currentList[position])
-                    removeFavorite(adapter.currentList[position].thumbnailUrl)
+                    removeSharedPref(adapter.currentList[position].thumbnailUrl)
                 }
 
                 Log.d("보관함검사", "${adapter.currentList}")
@@ -63,20 +66,20 @@ class StorageFragment : Fragment() {
         }
 
         binding.btnStorageClear.setOnClickListener {
-            removeAllFavorite()
+            removeAllSharedPref()
             sharedViewModel.clearLikedDataList()
         }
 
     }
 
-    private fun removeAllFavorite() {
+    private fun removeAllSharedPref() {
         val pref = requireContext().getSharedPreferences("favorite_prefs", 0)
         val editor = pref.edit()
         editor.clear()
         editor.apply()
     }
 
-    private fun removeFavorite(thumbnailUrl: String) {
+    private fun removeSharedPref(thumbnailUrl: String) {
         val pref = requireContext().getSharedPreferences("favorite_prefs", 0)
         val editor = pref.edit()
         val allData: Map<String, *> = pref.all

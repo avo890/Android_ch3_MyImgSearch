@@ -1,8 +1,6 @@
-package com.example.myimgsearch
+package com.example.myimgsearch.data
 
 import com.google.gson.annotations.SerializedName
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 data class KakaoImageData(
     @SerializedName("thumbnail_url")

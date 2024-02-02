@@ -1,6 +1,6 @@
-package com.example.myimgsearch
+package com.example.myimgsearch.data
 
-import retrofit2.Call
+import com.example.myimgsearch.BuildConfig
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Query

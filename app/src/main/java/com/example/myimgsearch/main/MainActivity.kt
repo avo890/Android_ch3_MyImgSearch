@@ -1,8 +1,10 @@
-package com.example.myimgsearch
+package com.example.myimgsearch.main
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.viewpager2.widget.ViewPager2
+import com.example.myimgsearch.ui.SearchFragment
+import com.example.myimgsearch.ui.StorageFragment
 import com.example.myimgsearch.databinding.ActivityMainBinding
 import com.google.android.material.tabs.TabLayoutMediator
 

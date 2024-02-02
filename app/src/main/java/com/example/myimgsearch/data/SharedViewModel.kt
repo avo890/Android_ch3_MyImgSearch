@@ -1,4 +1,4 @@
-package com.example.myimgsearch
+package com.example.myimgsearch.data
 
 import android.util.Log
 import androidx.lifecycle.LiveData
@@ -13,6 +13,9 @@ class SharedViewModel : ViewModel() {
 
     private val _searchDataList: MutableLiveData<MutableList<KakaoImageData>> = MutableLiveData()
     val searchDataList: LiveData<MutableList<KakaoImageData>> get() = _searchDataList
+
+    private val _checkDeletedUrls = MutableLiveData<List<String>?>(mutableListOf())
+    val checkDeletedUrls : LiveData<List<String>?> get() = _checkDeletedUrls
 
 
     fun addDataList(dataList: MutableList<KakaoImageData>) {
@@ -37,9 +40,19 @@ class SharedViewModel : ViewModel() {
 
     }
 
-
     fun clearLikedDataList() {
         _likedDataList.value = emptySet()
+    }
+
+    fun addDeletedItemUrls(url: String) {
+        val deletedLikeUrls = _checkDeletedUrls.value?.toMutableList() ?: mutableListOf()
+        deletedLikeUrls.add(url)
+        _checkDeletedUrls.value = deletedLikeUrls
+
+    }
+
+    fun clearCheckDeletedUrls() {
+        _checkDeletedUrls.value = emptyList()
     }
 
 

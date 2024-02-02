@@ -1,4 +1,4 @@
-package com.example.myimgsearch
+package com.example.myimgsearch.ui
 
 import android.view.LayoutInflater
 import android.view.View
@@ -7,6 +7,8 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.example.myimgsearch.R
+import com.example.myimgsearch.data.KakaoImageData
 import com.example.myimgsearch.databinding.LayoutItemBinding
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -51,13 +53,6 @@ class SharedListAdapter : ListAdapter<KakaoImageData, SharedListAdapter.Holder>(
                 return oldItem == newItem
             }
         }
-
-        private val adpater : SharedListAdapter by lazy { SharedListAdapter() }
-
-        fun getAdapter(): SharedListAdapter {
-            return adpater
-        }
-
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {

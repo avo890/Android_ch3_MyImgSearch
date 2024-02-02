@@ -1,4 +1,4 @@
-package com.example.myimgsearch
+package com.example.myimgsearch.ui
 
 import android.content.Context
 import android.os.Bundle
@@ -9,18 +9,18 @@ import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
+import com.example.myimgsearch.data.KakaoImageData
+import com.example.myimgsearch.data.RetrofitInstance
+import com.example.myimgsearch.data.SharedViewModel
 import com.example.myimgsearch.databinding.FragmentSearchBinding
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import kotlin.random.Random
 
 
 class SearchFragment : Fragment() {
@@ -49,6 +49,20 @@ class SearchFragment : Fragment() {
         sharedViewModel.searchDataList.observe(viewLifecycleOwner, Observer {
             adapter.submitList(it)
         })
+
+
+        sharedViewModel.checkDeletedUrls.observe(viewLifecycleOwner) {
+            it?.forEach {url ->
+                val targetItem = adapter.currentList.find { it.thumbnailUrl == url }
+
+                targetItem?.let {
+                    it.isliked = false
+                    val itemIndex = adapter.currentList.indexOf(it)
+                    adapter.notifyItemChanged(itemIndex)
+                }
+                sharedViewModel.clearCheckDeletedUrls()
+            }
+        }
 
 
         searchClick()
@@ -82,23 +96,6 @@ class SearchFragment : Fragment() {
     }
 
 
-//    private fun clickLiked() {
-//        adapter.itemClick = object : SharedListAdapter.ItemClick {
-//            override fun onClick(view: View, position: Int) {
-//                if (!dataList[position].isliked) {
-//                    Log.d("서치프래그먼트클릭검사","${dataList[position]}")
-//                    sharedViewModel.addFavorite(dataList[position])
-//                    dataList[position].isliked = true
-//                    saveFavorite()
-//                } else {
-//                    dataList[position].isliked = false
-//                    sharedViewModel.removeFavorite(dataList[position])
-//                }
-//                adapter.notifyItemChanged(position)
-//            }
-//        }
-//    }
-
     private fun clickLiked() {
         adapter.itemClick = object : SharedListAdapter.ItemClick {
             override fun onClick(view: View, position: Int) {
@@ -106,26 +103,27 @@ class SearchFragment : Fragment() {
                     Log.d("서치프래그먼트클릭검사","${dataList[position]}")
                     dataList[position].isliked = true
                     sharedViewModel.addFavorite(dataList[position])
-                    saveFavorite(position)
+                    saveSharedPref(position)
                 } else {
                     dataList[position].isliked = false
                     sharedViewModel.removeFavorite(dataList[position])
-                    removeFavorite(dataList[position].thumbnailUrl)
+                    removeSharedPref(dataList[position].thumbnailUrl)
                 }
                 adapter.notifyItemChanged(position)
             }
         }
     }
 
-    private fun saveFavorite(position: Int) {
+    private fun saveSharedPref(position: Int) {
+        val randomNum = Random.nextInt(1, 101)
         val pref = requireContext().getSharedPreferences("favorite_prefs", 0)
         val editor = pref?.edit()
         val likedDataJson = Gson().toJson(dataList[position])
-        editor?.putString("FavoriteData$position", likedDataJson)
+        editor?.putString("favorite_data_$position$randomNum", likedDataJson)
         editor?.apply()
     }
 
-    private fun removeFavorite(thumbnailUrl: String) {
+    private fun removeSharedPref(thumbnailUrl: String) {
         val pref = requireContext().getSharedPreferences("favorite_prefs", 0)
         val editor = pref.edit()
         val allData: Map<String, *> = pref.all
