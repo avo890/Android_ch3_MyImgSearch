@@ -17,9 +17,11 @@ import com.example.myimgsearch.data.RetrofitInstance
 import com.example.myimgsearch.data.SharedViewModel
 import com.example.myimgsearch.databinding.FragmentSearchBinding
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import kotlin.random.Random
 
 
@@ -43,39 +45,31 @@ class SearchFragment : Fragment() {
         binding.rvImgData.adapter = adapter
         binding.rvImgData.layoutManager = GridLayoutManager(context, 2)
 
-
-        loadSearchWord()
-
         sharedViewModel.searchDataList.observe(viewLifecycleOwner, Observer {
             adapter.submitList(it)
         })
 
-
-        sharedViewModel.checkDeletedUrls.observe(viewLifecycleOwner) {
-            it?.forEach {url ->
-                val targetItem = adapter.currentList.find { it.thumbnailUrl == url }
-
-                targetItem?.let {
-                    it.isliked = false
-                    val itemIndex = adapter.currentList.indexOf(it)
-                    adapter.notifyItemChanged(itemIndex)
-                }
-                sharedViewModel.clearCheckDeletedUrls()
-            }
-        }
-
-
+        loadSearchWord()
+        checkDeletedUrls()
         searchClick()
         clickLiked()
 
     }
 
 
-    private fun getSearchImg(searchWord: String) {
+    private fun getSearchImg(searchWord: String, sharedPrefList: List<String>) {
         lifecycleScope.launch {
             val responseList = withContext(Dispatchers.IO) {
                 RetrofitInstance.api.getImgData(query = searchWord).documents
             }
+
+            for (data in responseList) {
+                val thumbnailUrl = data.thumbnailUrl
+                if (sharedPrefList.any { it.contains(thumbnailUrl) }) {
+                    data.isliked = true
+                }
+            }
+
             dataList.clear()
             dataList.addAll(responseList)
             adapter.submitList(dataList)
@@ -86,28 +80,28 @@ class SearchFragment : Fragment() {
     private fun searchClick() {
         binding.btnSearch.setOnClickListener {
             searchWord = binding.etSearch.text.toString()
-            getSearchImg(searchWord)
+            getSearchImg(searchWord, getSharedPref())
             sharedViewModel.addDataList(dataList)
             Log.d("검색어검사", "$searchWord")
             hideKeyboard()
             saveSearchWord(searchWord)
         }
-
     }
 
 
     private fun clickLiked() {
         adapter.itemClick = object : SharedListAdapter.ItemClick {
             override fun onClick(view: View, position: Int) {
-                if (!dataList[position].isliked) {
-                    Log.d("서치프래그먼트클릭검사","${dataList[position]}")
-                    dataList[position].isliked = true
-                    sharedViewModel.addFavorite(dataList[position])
+                if (!adapter.currentList[position].isliked) {
+                    Log.d("서치프래그먼트클릭검사", "${adapter.currentList[position]}")
+                    adapter.currentList[position].isliked = true
+                    sharedViewModel.addFavorite(adapter.currentList[position])
                     saveSharedPref(position)
                 } else {
-                    dataList[position].isliked = false
-                    sharedViewModel.removeFavorite(dataList[position])
-                    removeSharedPref(dataList[position].thumbnailUrl)
+                    adapter.currentList[position].isliked = false
+                    sharedViewModel.addDeletedItemUrls(adapter.currentList[position].thumbnailUrl)
+                    sharedViewModel.removeFavorite(adapter.currentList[position].thumbnailUrl)
+                    removeSharedPref(adapter.currentList[position].thumbnailUrl)
                 }
                 adapter.notifyItemChanged(position)
             }
@@ -135,6 +129,35 @@ class SearchFragment : Fragment() {
         editor.apply()
     }
 
+    fun getSharedPref(): List<String> {
+        val pref = requireContext().getSharedPreferences("favorite_prefs", 0)
+        val allItems: Map<String, *> = pref.all
+        val sharedPrefList = mutableListOf<String>()
+
+        for ((_, value) in allItems) {
+            if (value is String) {
+                val imageData = Gson().fromJson(value, KakaoImageData::class.java)
+                sharedPrefList.add(imageData.thumbnailUrl)
+            }
+        }
+        return sharedPrefList
+    }
+
+    fun checkDeletedUrls() {
+        sharedViewModel.checkDeletedUrls.observe(viewLifecycleOwner) {
+            it?.forEach { url ->
+                val targetItem = adapter.currentList.find { it.thumbnailUrl == url }
+
+                targetItem?.let {
+                    it.isliked = false
+                    val itemIndex = adapter.currentList.indexOf(it)
+                    adapter.notifyItemChanged(itemIndex)
+                }
+                sharedViewModel.clearCheckDeletedUrls()
+            }
+        }
+
+    }
 
     private fun saveSearchWord(searchWord: String) {
         val pref = requireContext().getSharedPreferences("pref", 0)

@@ -32,11 +32,13 @@ class SharedViewModel : ViewModel() {
     }
 
 
-    fun removeFavorite(kakaoImageData: KakaoImageData?) {
+    fun removeFavorite(thumbnailUrl: String?) {
         _likedDataList.value = _likedDataList.value?.toMutableSet()?.apply {
-            remove(kakaoImageData)
+            val removeItem = find { it.thumbnailUrl == thumbnailUrl }
+            remove(removeItem)
         } ?: mutableSetOf()
-        Log.d("리무브검사","리무브검사")
+        Log.d("리무브검사","${_likedDataList.value}")
+        Log.d("리무브사이즈검사", "${_likedDataList.value?.count()}")
 
     }
 

@@ -34,28 +34,25 @@ class StorageFragment : Fragment() {
         binding.rvLikedData.adapter = adapter
         binding.rvLikedData.layoutManager = GridLayoutManager(context, 2)
 
-        val pref = requireContext().getSharedPreferences("favorite_prefs", 0)
-        val allKeys = pref.all.keys
-
-        for (key in allKeys) {
-            val favoriteItemsJson = pref.getString(key, "")
-            if (favoriteItemsJson != null) {
-                val favoriteItems = Gson().fromJson(favoriteItemsJson, KakaoImageData::class.java)
-                sharedViewModel.addFavorite(favoriteItems)
-            }
-        }
+        loadSharedPref()
 
         sharedViewModel.likedDataList.observe(viewLifecycleOwner, Observer {
             adapter.submitList(it.toList())
         })
 
+        clickLikedItem()
+        clearStorage()
+
+    }
+
+    private fun clickLikedItem() {
         adapter.itemClick = object : SharedListAdapter.ItemClick {
             override fun onClick(view: View, position: Int) {
 
                 if (position < adapter.currentList.size) {
 //                    adapter.currentList[position].isliked = false
                     sharedViewModel.addDeletedItemUrls(adapter.currentList[position].thumbnailUrl)
-                    sharedViewModel.removeFavorite(adapter.currentList[position])
+                    sharedViewModel.removeFavorite(adapter.currentList[position].thumbnailUrl)
                     removeSharedPref(adapter.currentList[position].thumbnailUrl)
                 }
 
@@ -64,12 +61,6 @@ class StorageFragment : Fragment() {
 
             }
         }
-
-        binding.btnStorageClear.setOnClickListener {
-            removeAllSharedPref()
-            sharedViewModel.clearLikedDataList()
-        }
-
     }
 
     private fun removeAllSharedPref() {
@@ -89,6 +80,27 @@ class StorageFragment : Fragment() {
             }
         }
         editor.apply()
+    }
+
+    private fun loadSharedPref() {
+        val pref = requireContext().getSharedPreferences("favorite_prefs", 0)
+        val allKeys = pref.all.keys
+
+        for (key in allKeys) {
+            val favoriteItemsJson = pref.getString(key, "")
+            if (favoriteItemsJson != null) {
+                val favoriteItems = Gson().fromJson(favoriteItemsJson, KakaoImageData::class.java)
+                sharedViewModel.addFavorite(favoriteItems)
+            }
+        }
+    }
+
+    private fun clearStorage() {
+        binding.btnStorageClear.setOnClickListener {
+            removeAllSharedPref()
+            sharedViewModel.clearLikedDataList()
+        }
+
     }
 
     override fun onDestroy() {
